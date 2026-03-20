@@ -99,6 +99,7 @@
             display: none;
             flex-direction: column;
             gap: 1.5rem;
+            padding-right: 1rem;
         }
 
         .week-view.active, .day-view.active {
@@ -690,7 +691,7 @@
                 </div>
             </header>
             
-            <div id="month-view-container" class="active">
+            <div id="month-view-container" class="month-view-container active">
                 <div class="day-headers" id="day-headers">
                     <div class="day-header">Sun</div>
                     <div class="day-header">Mon</div>
@@ -774,6 +775,8 @@
     </div>
 
     <script>
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
         const state = {
             entries: (() => {
                 const v3 = localStorage.getItem('calendar_entries_v3');
@@ -835,10 +838,13 @@
         }
 
         function render() {
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
+
             elements.month.textContent = state.month;
             elements.year.textContent = `${state.year} • Desktop Layer`;
             elements.todayNum.textContent = state.today;
-            elements.tomorrowNum.textContent = state.today === 31 ? 1 : state.today + 1;
+            elements.tomorrowNum.textContent = state.today === daysInMonth ? 1 : state.today + 1;
             updateClock();
 
             // Toggle views
@@ -864,7 +870,6 @@
         function renderMonthView() {
             elements.grid.innerHTML = '';
             
-            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             const monthIndex = monthNames.indexOf(state.month);
             const firstDayOfMonth = new Date(state.year, monthIndex, 1).getDay();
             const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
@@ -894,12 +899,32 @@
         function renderWeekView() {
             elements.weekView.innerHTML = '';
             const startDay = state.viewDay;
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
             
             for (let i = 0; i < 7; i++) {
                 let day = startDay + i;
-                if (day > 31) day = day - 31;
+                let displayMonthIndex = monthIndex;
+                let displayYear = state.year;
+
+                if (day > daysInMonth) {
+                    day = day - daysInMonth;
+                    displayMonthIndex++;
+                    if (displayMonthIndex > 11) {
+                        displayMonthIndex = 0;
+                        displayYear++;
+                    }
+                } else if (day < 1) {
+                    const prevMonthDays = new Date(state.year, monthIndex, 0).getDate();
+                    day = prevMonthDays + day;
+                    displayMonthIndex--;
+                    if (displayMonthIndex < 0) {
+                        displayMonthIndex = 11;
+                        displayYear--;
+                    }
+                }
                 
-                const date = new Date(state.year, 2, day); // March 2026 (month index 2)
+                const date = new Date(displayYear, displayMonthIndex, day);
                 const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
                 
                 const row = document.createElement('div');
@@ -925,7 +950,8 @@
         function renderDayView() {
             elements.dayView.innerHTML = '';
             const day = state.viewDay;
-            const date = new Date(state.year, 2, day);
+            const monthIndex = monthNames.indexOf(state.month);
+            const date = new Date(state.year, monthIndex, day);
             const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
             
             const entries = state.entries[day] || [];
@@ -953,7 +979,9 @@
 
         function renderUpcoming() {
             elements.upcomingList.innerHTML = '';
-            const tomorrow = state.today === 31 ? 1 : state.today + 1;
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
+            const tomorrow = state.today === daysInMonth ? 1 : state.today + 1;
             
             // Get all days with entries that are after tomorrow
             const upcomingDays = Object.keys(state.entries)
@@ -982,6 +1010,8 @@
         }
 
         function renderAgenda(day, container) {
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
             const dayEntries = state.entries[day] || [];
             container.innerHTML = '';
             if (dayEntries.length === 0) {
@@ -1099,23 +1129,29 @@
 
         // Navigation
         elements.prevBtn.onclick = () => {
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInPrevMonth = new Date(state.year, monthIndex, 0).getDate();
+
             if (state.activeView === 'week') {
                 state.viewDay -= 7;
-                if (state.viewDay < 1) state.viewDay = 31 + state.viewDay;
+                if (state.viewDay < 1) state.viewDay = daysInPrevMonth + state.viewDay;
             } else if (state.activeView === 'day') {
                 state.viewDay -= 1;
-                if (state.viewDay < 1) state.viewDay = 31;
+                if (state.viewDay < 1) state.viewDay = daysInPrevMonth;
             }
             render();
         };
 
         elements.nextBtn.onclick = () => {
+            const monthIndex = monthNames.indexOf(state.month);
+            const daysInCurrentMonth = new Date(state.year, monthIndex + 1, 0).getDate();
+
             if (state.activeView === 'week') {
                 state.viewDay += 7;
-                if (state.viewDay > 31) state.viewDay = state.viewDay - 31;
+                if (state.viewDay > daysInCurrentMonth) state.viewDay = state.viewDay - daysInCurrentMonth;
             } else if (state.activeView === 'day') {
                 state.viewDay += 1;
-                if (state.viewDay > 31) state.viewDay = 1;
+                if (state.viewDay > daysInCurrentMonth) state.viewDay = 1;
             }
             render();
         };
