@@ -86,11 +86,223 @@
 
         .calendar-grid {
             flex: 1;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 1rem;
             overflow-y: auto;
-            padding-right: 1rem;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            width: 100%;
+        }
+
+        .week-view, .day-view {
+            flex: 1;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .week-view.active, .day-view.active {
+            display: flex;
+        }
+
+        .day-headers {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 1rem;
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+
+        .day-header {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: rgba(216, 229, 233, 0.3);
+            text-align: left;
+            padding-left: 1rem;
+            font-weight: 600;
+        }
+
+        .month-view-container {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .month-view-container.active {
+            display: flex;
+        }
+
+        /* Tabs Styling */
+        .view-tabs {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+            border-bottom: 1px solid rgba(216, 229, 233, 0.1);
+        }
+
+        .view-tab {
+            background: transparent;
+            border: none;
+            color: rgba(216, 229, 233, 0.3);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            padding: 0.75rem 0;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .view-tab.active {
+            color: var(--color-light);
+        }
+
+        .view-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--color-light);
+        }
+
+        /* Week View Styling */
+        .week-view {
+            gap: 1.5rem;
+        }
+
+        .week-day-row {
+            display: flex;
+            gap: 1.5rem;
+            background: rgba(216, 229, 233, 0.03);
+            border: 1px solid rgba(216, 229, 233, 0.05);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .week-day-row:hover {
+            background: rgba(216, 229, 233, 0.06);
+            border-color: rgba(216, 229, 233, 0.2);
+        }
+
+        .week-day-info {
+            width: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-right: 1px solid rgba(216, 229, 233, 0.1);
+            padding-right: 1.5rem;
+        }
+
+        .week-day-name {
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: rgba(216, 229, 233, 0.4);
+        }
+
+        .week-day-num {
+            font-size: 2rem;
+            font-weight: 200;
+        }
+
+        .week-day-events {
+            flex: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-content: flex-start;
+        }
+
+        /* Day View Styling */
+        .day-view {
+            gap: 2rem;
+        }
+
+        .day-view-header {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .day-view-num {
+            font-size: 8rem;
+            font-weight: 100;
+            line-height: 1;
+            color: rgba(216, 229, 233, 0.8);
+        }
+
+        .day-view-details {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .day-view-name {
+            font-size: 1.5rem;
+            font-weight: 200;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: rgba(216, 229, 233, 0.4);
+        }
+
+        .day-view-events-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .day-view-item {
+            background: rgba(216, 229, 233, 0.05);
+            border: 1px solid rgba(216, 229, 233, 0.1);
+            padding: 2rem;
+            border-radius: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .day-view-item-time {
+            font-size: 0.8rem;
+            color: rgba(216, 229, 233, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .day-view-item-text {
+            font-size: 1.25rem;
+            font-weight: 300;
+        }
+
+        .view-nav {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .nav-btn {
+            background: rgba(216, 229, 233, 0.05);
+            border: 1px solid rgba(216, 229, 233, 0.1);
+            color: var(--color-light);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            transition: var(--transition);
+        }
+
+        .nav-btn:hover {
+            background: rgba(216, 229, 233, 0.1);
+            border-color: rgba(216, 229, 233, 0.3);
         }
 
         .clock {
@@ -456,13 +668,42 @@
     <div class="app-container">
         <main>
             <header>
-                <div style="display: flex; align-items: baseline; gap: 2rem;">
-                    <h1 id="current-month">Month</h1>
-                    <div class="clock" id="digital-clock">00:00:00</div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <div>
+                        <div style="display: flex; align-items: baseline; gap: 2rem;">
+                            <h1 id="current-month">Month</h1>
+                            <div class="clock" id="digital-clock">00:00:00</div>
+                        </div>
+                        <p class="header-sub" id="current-year">2026 • Desktop Layer</p>
+                    </div>
+                    
+                    <div class="view-nav" id="view-nav" style="display: none;">
+                        <button class="nav-btn" id="prev-btn">Prev</button>
+                        <button class="nav-btn" id="next-btn">Next</button>
+                    </div>
                 </div>
-                <p class="header-sub" id="current-year">2026 • Desktop Layer</p>
+
+                <div class="view-tabs">
+                    <button class="view-tab active" data-view="month">Month</button>
+                    <button class="view-tab" data-view="week">Week</button>
+                    <button class="view-tab" data-view="day">Day</button>
+                </div>
             </header>
-            <div class="calendar-grid" id="calendar-grid"></div>
+            
+            <div id="month-view-container" class="active">
+                <div class="day-headers" id="day-headers">
+                    <div class="day-header">Sun</div>
+                    <div class="day-header">Mon</div>
+                    <div class="day-header">Tue</div>
+                    <div class="day-header">Wed</div>
+                    <div class="day-header">Thu</div>
+                    <div class="day-header">Fri</div>
+                    <div class="day-header">Sat</div>
+                </div>
+                <div class="calendar-grid" id="calendar-grid"></div>
+            </div>
+            <div class="week-view" id="week-view"></div>
+            <div class="day-view" id="day-view"></div>
         </main>
 
         <aside>
@@ -553,6 +794,8 @@
                 return {};
             })(),
             selectedDay: null,
+            activeView: 'month',
+            viewDay: new Date().getDate(),
             today: new Date().getDate(),
             month: new Intl.DateTimeFormat('en-US', { month: 'long' }).format(new Date()),
             year: new Date().getFullYear()
@@ -576,7 +819,14 @@
             closeBtn: document.getElementById('close-modal'),
             modalEventList: document.getElementById('modal-event-list'),
             viewAgenda: document.getElementById('view-agenda'),
-            upcomingList: document.getElementById('upcoming-list')
+            upcomingList: document.getElementById('upcoming-list'),
+            monthViewContainer: document.getElementById('month-view-container'),
+            weekView: document.getElementById('week-view'),
+            dayView: document.getElementById('day-view'),
+            viewTabs: document.querySelectorAll('.view-tab'),
+            viewNav: document.getElementById('view-nav'),
+            prevBtn: document.getElementById('prev-btn'),
+            nextBtn: document.getElementById('next-btn')
         };
 
         function save() {
@@ -591,9 +841,41 @@
             elements.tomorrowNum.textContent = state.today === 31 ? 1 : state.today + 1;
             updateClock();
 
-            // Render Grid
+            // Toggle views
+            elements.monthViewContainer.classList.toggle('active', state.activeView === 'month');
+            elements.weekView.classList.toggle('active', state.activeView === 'week');
+            elements.dayView.classList.toggle('active', state.activeView === 'day');
+            elements.viewNav.style.display = state.activeView === 'month' ? 'none' : 'flex';
+
+            if (state.activeView === 'month') {
+                renderMonthView();
+            } else if (state.activeView === 'week') {
+                renderWeekView();
+            } else if (state.activeView === 'day') {
+                renderDayView();
+            }
+
+            // Render Agenda
+            renderAgenda(state.today, elements.todayList);
+            renderAgenda(state.today === 31 ? 1 : state.today + 1, elements.tomorrowList);
+            renderUpcoming();
+        }
+
+        function renderMonthView() {
             elements.grid.innerHTML = '';
-            for (let i = 1; i <= 31; i++) {
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            const monthIndex = monthNames.indexOf(state.month);
+            const firstDayOfMonth = new Date(state.year, monthIndex, 1).getDay();
+            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const empty = document.createElement('div');
+                empty.style.opacity = '0';
+                elements.grid.appendChild(empty);
+            }
+
+            for (let i = 1; i <= daysInMonth; i++) {
                 const card = document.createElement('div');
                 card.className = `day-card ${i === state.today ? 'today' : ''}`;
                 card.innerHTML = `
@@ -607,11 +889,66 @@
                 card.onclick = () => openModal(i);
                 elements.grid.appendChild(card);
             }
+        }
 
-            // Render Agenda
-            renderAgenda(state.today, elements.todayList);
-            renderAgenda(state.today === 31 ? 1 : state.today + 1, elements.tomorrowList);
-            renderUpcoming();
+        function renderWeekView() {
+            elements.weekView.innerHTML = '';
+            const startDay = state.viewDay;
+            
+            for (let i = 0; i < 7; i++) {
+                let day = startDay + i;
+                if (day > 31) day = day - 31;
+                
+                const date = new Date(state.year, 2, day); // March 2026 (month index 2)
+                const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
+                
+                const row = document.createElement('div');
+                row.className = 'week-day-row';
+                row.onclick = () => openModal(day);
+                
+                const entries = state.entries[day] || [];
+                
+                row.innerHTML = `
+                    <div class="week-day-info">
+                        <div class="week-day-name">${dayName}</div>
+                        <div class="week-day-num">${day.toString().padStart(2, '0')}</div>
+                    </div>
+                    <div class="week-day-events">
+                        ${entries.map(e => `<div class="event-pill">${e.time ? e.time + ' ' : ''}${e.text}</div>`).join('')}
+                        ${entries.length === 0 ? '<span style="opacity: 0.1; font-size: 0.7rem; font-style: italic;">No events</span>' : ''}
+                    </div>
+                `;
+                elements.weekView.appendChild(row);
+            }
+        }
+
+        function renderDayView() {
+            elements.dayView.innerHTML = '';
+            const day = state.viewDay;
+            const date = new Date(state.year, 2, day);
+            const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
+            
+            const entries = state.entries[day] || [];
+            
+            elements.dayView.innerHTML = `
+                <div class="day-view-header">
+                    <div class="day-view-num">${day.toString().padStart(2, '0')}</div>
+                    <div class="day-view-details">
+                        <div class="day-view-name">${dayName}</div>
+                        <div style="font-size: 0.8rem; opacity: 0.4;">${entries.length} Events Scheduled</div>
+                        <button class="add-btn" style="margin-top: 1rem; width: fit-content;" onclick="openModal(${day})">+ Add Event</button>
+                    </div>
+                </div>
+                <div class="day-view-events-list">
+                    ${entries.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99')).map(e => `
+                        <div class="day-view-item">
+                            ${e.time ? `<div class="day-view-item-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${e.time}</div>` : ''}
+                            <div class="day-view-item-text">${e.text}</div>
+                        </div>
+                    `).join('')}
+                    ${entries.length === 0 ? '<div style="grid-column: 1/-1; text-align: center; padding: 4rem; opacity: 0.2; font-style: italic;">No events scheduled for this day</div>' : ''}
+                </div>
+            `;
         }
 
         function renderUpcoming() {
@@ -664,7 +1001,7 @@
 
         function openModal(day) {
             state.selectedDay = day;
-            elements.modalTitle.textContent = `Day ${day}`;
+            elements.modalTitle.textContent = `${state.month} ${day}`;
             elements.modal.classList.add('active');
             elements.eventInput.focus();
             elements.clearAllBtn.textContent = 'Clear All';
@@ -748,6 +1085,39 @@
 
         elements.modal.onclick = (e) => {
             if (e.target === elements.modal) closeModal();
+        };
+
+        // Tab Switching
+        elements.viewTabs.forEach(tab => {
+            tab.onclick = () => {
+                elements.viewTabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                state.activeView = tab.dataset.view;
+                render();
+            };
+        });
+
+        // Navigation
+        elements.prevBtn.onclick = () => {
+            if (state.activeView === 'week') {
+                state.viewDay -= 7;
+                if (state.viewDay < 1) state.viewDay = 31 + state.viewDay;
+            } else if (state.activeView === 'day') {
+                state.viewDay -= 1;
+                if (state.viewDay < 1) state.viewDay = 31;
+            }
+            render();
+        };
+
+        elements.nextBtn.onclick = () => {
+            if (state.activeView === 'week') {
+                state.viewDay += 7;
+                if (state.viewDay > 31) state.viewDay = state.viewDay - 31;
+            } else if (state.activeView === 'day') {
+                state.viewDay += 1;
+                if (state.viewDay > 31) state.viewDay = 1;
+            }
+            render();
         };
 
         function updateClock() {
