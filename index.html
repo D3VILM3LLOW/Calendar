@@ -457,7 +457,7 @@
         }
 
         aside {
-            width: 320px;
+            width: 400px;
             background: rgba(27, 37, 56, 0.4);
             backdrop-filter: blur(20px);
             border-left: 1px solid rgba(216, 229, 233, 0.1);
@@ -825,7 +825,7 @@
         }
 
         .study-goal-item input[type="checkbox"] {
-            accent-color: #1DB954; /* Spotify green */
+            accent-color: #3b82f6; /* Blue */
             cursor: pointer;
         }
 
@@ -1512,7 +1512,7 @@
                 item.className = `agenda-item ${e.completed ? 'completed' : ''}`;
                 item.style.cursor = 'pointer';
                 item.innerHTML = `
-                    <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${day}, ${index})" style="accent-color: #1DB954;">
+                    <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${day}, ${index})" style="accent-color: #3b82f6;">
                     <div class="agenda-item-content">
                         <div class="agenda-item-text">${e.text}</div>
                         ${e.time ? `<div class="agenda-item-time"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${e.time}</div>` : ''}
@@ -1552,7 +1552,7 @@
                 item.className = `event-item ${e.completed ? 'completed' : ''}`;
                 item.innerHTML = `
                     <label class="event-item-info" style="display: flex; align-items: center; gap: 0.75rem; flex: 1; cursor: pointer;">
-                        <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${state.selectedDay}, ${index})" style="accent-color: #1DB954;">
+                        <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${state.selectedDay}, ${index})" style="accent-color: #3b82f6;">
                         <div style="flex: 1;">
                             <div class="agenda-item-text">${e.text}</div>
                             ${e.time ? `<div class="agenda-item-time">${e.time}</div>` : ''}
