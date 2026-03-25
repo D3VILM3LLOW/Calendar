@@ -1073,15 +1073,21 @@
                 <div style="display: flex; justify-content: space-between; align-items: flex-start;">
                     <div>
                         <div style="display: flex; align-items: baseline; gap: 2rem;">
-                            <h1 id="current-month">Month</h1>
+                            <h1 id="current-month" style="min-width: 180px;">Month</h1>
                             <div class="clock" id="digital-clock">00:00:00</div>
                         </div>
                         <p class="header-sub" id="current-year">2026</p>
                     </div>
                     
-                    <div class="view-nav" id="view-nav" style="display: none;">
-                        <button class="nav-btn" id="prev-btn">Prev</button>
-                        <button class="nav-btn" id="next-btn">Next</button>
+                    <div class="view-nav" id="view-nav">
+                        <div id="month-nav" style="display: flex; gap: 1rem;">
+                            <button class="nav-btn" id="month-prev">Prev</button>
+                            <button class="nav-btn" id="month-next">Next</button>
+                        </div>
+                        <div id="other-nav" style="display: none; gap: 1rem;">
+                            <button class="nav-btn" id="prev-btn">Prev</button>
+                            <button class="nav-btn" id="next-btn">Next</button>
+                        </div>
                     </div>
                 </div>
 
@@ -1190,6 +1196,16 @@
                         </select>
                     </div>
                 </div>
+                <div class="input-wrapper">
+                    <label>Recurring</label>
+                    <select id="recurring-input">
+                        <option value="none">None</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
                 <button class="add-btn" id="add-event-btn">Add Event</button>
             </div>
 
@@ -1235,18 +1251,27 @@
 
         const state = {
             entries: (() => {
-                const v3 = localStorage.getItem('calendar_entries_v3');
-                if (v3) return JSON.parse(v3);
+                const v4 = localStorage.getItem('calendar_entries_v4');
+                if (v4) return JSON.parse(v4);
                 
-                const v2 = localStorage.getItem('calendar_entries_v2');
-                if (v2) {
+                const v3 = localStorage.getItem('calendar_entries_v3');
+                if (v3) {
                     try {
-                        const oldEntries = JSON.parse(v2);
+                        const oldEntries = JSON.parse(v3);
                         const migrated = {};
+                        const now = new Date();
+                        const year = now.getFullYear();
+                        const month = (now.getMonth() + 1).toString().padStart(2, '0');
+                        
                         Object.entries(oldEntries).forEach(([day, list]) => {
-                            migrated[day] = list.map(text => ({ text, time: '' }));
+                            if (day.includes('-')) {
+                                migrated[day] = list;
+                            } else {
+                                const dateStr = `${year}-${month}-${day.padStart(2, '0')}`;
+                                migrated[dateStr] = list;
+                            }
                         });
-                        localStorage.setItem('calendar_entries_v3', JSON.stringify(migrated));
+                        localStorage.setItem('calendar_entries_v4', JSON.stringify(migrated));
                         return migrated;
                     } catch (e) { console.error(e); }
                 }
@@ -1286,6 +1311,9 @@
             clearAllBtn: document.getElementById('clear-all-btn'),
             closeBtn: document.getElementById('close-modal'),
             reminderInput: document.getElementById('reminder-input'),
+            monthNext: document.getElementById('month-next'),
+            monthPrev: document.getElementById('month-prev'),
+            recurringInput: document.getElementById('recurring-input'),
             modalEventList: document.getElementById('modal-event-list'),
             sidebarAgenda: document.getElementById('sidebar-agenda'),
             sidebarStudy: document.getElementById('sidebar-study'),
@@ -1296,13 +1324,58 @@
             dayView: document.getElementById('day-view'),
             viewTabs: document.querySelectorAll('.view-tab'),
             viewNav: document.getElementById('view-nav'),
+            monthNav: document.getElementById('month-nav'),
+            otherNav: document.getElementById('other-nav'),
             prevBtn: document.getElementById('prev-btn'),
             nextBtn: document.getElementById('next-btn')
         };
 
         function save() {
-            localStorage.setItem('calendar_entries_v3', JSON.stringify(state.entries));
+            localStorage.setItem('calendar_entries_v4', JSON.stringify(state.entries));
             render();
+        }
+
+        function getEntriesForDate(year, month, day) {
+            const dateStr = `${year}-${(monthNames.indexOf(month) + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+            const dateObj = new Date(year, monthNames.indexOf(month), day);
+            const dayOfWeek = dateObj.getDay();
+            
+            const entries = [...(state.entries[dateStr] || [])];
+            
+            // Add recurring events
+            Object.entries(state.entries).forEach(([entryDateStr, dayList]) => {
+                if (Array.isArray(dayList)) {
+                    dayList.forEach(event => {
+                        if (event.recurring && event.recurring !== 'none') {
+                            const [eYear, eMonth, eDay] = entryDateStr.split('-').map(Number);
+                            const eventDate = new Date(eYear, eMonth - 1, eDay);
+                            
+                            if (eventDate.getTime() >= dateObj.getTime()) return; // Don't show before it was created
+
+                            let isMatch = false;
+                            if (event.recurring === 'daily') {
+                                isMatch = true;
+                            } else if (event.recurring === 'weekly') {
+                                if (eventDate.getDay() === dayOfWeek) isMatch = true;
+                            } else if (event.recurring === 'monthly') {
+                                if (eventDate.getDate() === day) isMatch = true;
+                            } else if (event.recurring === 'yearly') {
+                                if (eventDate.getDate() === day && eventDate.getMonth() === monthNames.indexOf(month)) isMatch = true;
+                            }
+
+                            if (isMatch) {
+                                // Check if this specific instance was deleted or modified? 
+                                // For now, just add it if it's not already there (by ID)
+                                if (!entries.find(e => e.id === event.id)) {
+                                    entries.push({ ...event, isRecurringInstance: true });
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+
+            return entries.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99'));
         }
 
         function render() {
@@ -1319,7 +1392,9 @@
             elements.monthViewContainer.classList.toggle('active', state.activeView === 'month');
             elements.weekView.classList.toggle('active', state.activeView === 'week');
             elements.dayView.classList.toggle('active', state.activeView === 'day');
-            elements.viewNav.style.display = state.activeView === 'month' ? 'none' : 'flex';
+            
+            elements.monthNav.style.display = state.activeView === 'month' ? 'flex' : 'none';
+            elements.otherNav.style.display = state.activeView === 'month' ? 'none' : 'flex';
 
             if (state.activeView === 'month') {
                 renderMonthView();
@@ -1341,9 +1416,21 @@
             }
 
             // Render Agenda
-            renderAgenda(state.today, elements.todayList);
-            const tomorrowNum = state.today === daysInMonth ? 1 : state.today + 1;
-            renderAgenda(tomorrowNum, elements.tomorrowList);
+            renderAgenda(state.today, elements.todayList, state.month, state.year);
+            
+            // Calculate tomorrow
+            let tomorrowDay = state.today + 1;
+            let tomorrowMonth = state.month;
+            let tomorrowYear = state.year;
+            
+            if (tomorrowDay > daysInMonth) {
+                tomorrowDay = 1;
+                let m = monthIndex + 1;
+                if (m > 11) { m = 0; tomorrowYear++; }
+                tomorrowMonth = monthNames[m];
+            }
+            
+            renderAgenda(tomorrowDay, elements.tomorrowList, tomorrowMonth, tomorrowYear);
             renderUpcoming();
         }
 
@@ -1361,15 +1448,16 @@
             }
 
             for (let i = 1; i <= daysInMonth; i++) {
+                const dayEntries = getEntriesForDate(state.year, state.month, i);
                 const card = document.createElement('div');
-                card.className = `day-card ${i === state.today ? 'today' : ''}`;
+                card.className = `day-card ${i === state.today && state.month === monthNames[new Date().getMonth()] && state.year === new Date().getFullYear() ? 'today' : ''}`;
                 card.innerHTML = `
                     <span class="day-number">${i.toString().padStart(2, '0')}</span>
                     <div class="day-events">
-                        ${(state.entries[i] || []).slice(0, 2).map(e => `<div class="event-pill">${e.time ? e.time + ' ' : ''}${e.text}</div>`).join('')}
-                        ${(state.entries[i] || []).length > 2 ? `<div class="event-pill" style="opacity: 0.4">+ ${(state.entries[i] || []).length - 2} more</div>` : ''}
+                        ${dayEntries.slice(0, 2).map(e => `<div class="event-pill ${e.isRecurringInstance ? 'recurring' : ''}">${e.time ? e.time + ' ' : ''}${e.text}</div>`).join('')}
+                        ${dayEntries.length > 2 ? `<div class="event-pill" style="opacity: 0.4">+ ${dayEntries.length - 2} more</div>` : ''}
                     </div>
-                    ${i === state.today ? '<div class="today-dot"></div>' : ''}
+                    ${i === state.today && state.month === monthNames[new Date().getMonth()] && state.year === new Date().getFullYear() ? '<div class="today-dot"></div>' : ''}
                 `;
                 card.onclick = () => openModal(i);
                 elements.grid.appendChild(card);
@@ -1378,40 +1466,28 @@
 
         function renderWeekView() {
             elements.weekView.innerHTML = '';
-            const startDay = state.viewDay;
             const monthIndex = monthNames.indexOf(state.month);
-            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
-            
-            for (let i = 0; i < 7; i++) {
-                let day = startDay + i;
-                let displayMonthIndex = monthIndex;
-                let displayYear = state.year;
+            const date = new Date(state.year, monthIndex, state.viewDay);
+            const startOfWeek = new Date(date);
+            startOfWeek.setDate(date.getDate() - date.getDay());
 
-                if (day > daysInMonth) {
-                    day = day - daysInMonth;
-                    displayMonthIndex++;
-                    if (displayMonthIndex > 11) {
-                        displayMonthIndex = 0;
-                        displayYear++;
-                    }
-                } else if (day < 1) {
-                    const prevMonthDays = new Date(state.year, monthIndex, 0).getDate();
-                    day = prevMonthDays + day;
-                    displayMonthIndex--;
-                    if (displayMonthIndex < 0) {
-                        displayMonthIndex = 11;
-                        displayYear--;
-                    }
-                }
+            for (let i = 0; i < 7; i++) {
+                const current = new Date(startOfWeek);
+                current.setDate(startOfWeek.getDate() + i);
                 
-                const date = new Date(displayYear, displayMonthIndex, day);
-                const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
-                
+                const day = current.getDate();
+                const month = monthNames[current.getMonth()];
+                const year = current.getFullYear();
+                const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(current);
+                const entries = getEntriesForDate(year, month, day);
+
                 const row = document.createElement('div');
                 row.className = 'week-day-row';
-                row.onclick = () => openModal(day);
-                
-                const entries = state.entries[day] || [];
+                row.onclick = () => {
+                    state.month = month;
+                    state.year = year;
+                    openModal(day);
+                };
                 
                 row.innerHTML = `
                     <div class="week-day-info">
@@ -1419,7 +1495,7 @@
                         <div class="week-day-num">${day.toString().padStart(2, '0')}</div>
                     </div>
                     <div class="week-day-events">
-                        ${entries.map(e => `<div class="event-pill">${e.time ? e.time + ' ' : ''}${e.text}</div>`).join('')}
+                        ${entries.map(e => `<div class="event-pill ${e.isRecurringInstance ? 'recurring' : ''}">${e.time ? e.time + ' ' : ''}${e.text}</div>`).join('')}
                         ${entries.length === 0 ? '<span style="opacity: 0.1; font-size: 0.7rem; font-style: italic;">No events</span>' : ''}
                     </div>
                 `;
@@ -1434,7 +1510,7 @@
             const date = new Date(state.year, monthIndex, day);
             const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(date);
             
-            const entries = state.entries[day] || [];
+            const entries = getEntriesForDate(state.year, state.month, day);
             
             elements.dayView.innerHTML = `
                 <div class="day-view-header">
@@ -1446,8 +1522,8 @@
                     </div>
                 </div>
                 <div class="day-view-events-list">
-                    ${entries.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99')).map(e => `
-                        <div class="day-view-item">
+                    ${entries.map(e => `
+                        <div class="day-view-item ${e.isRecurringInstance ? 'recurring' : ''}">
                             ${e.time ? `<div class="day-view-item-time"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${e.time}</div>` : ''}
                             <div class="day-view-item-text">${e.text}</div>
                         </div>
@@ -1614,28 +1690,23 @@
 
         function renderUpcoming() {
             elements.upcomingList.innerHTML = '';
-            const monthIndex = monthNames.indexOf(state.month);
-            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
-            const tomorrow = state.today === daysInMonth ? 1 : state.today + 1;
+            const today = new Date();
             
-            // Get all days with entries that are after tomorrow
-            const upcomingDays = Object.keys(state.entries)
-                .map(Number)
-                .filter(day => day > tomorrow)
-                .sort((a, b) => a - b);
+            // Show next 7 days of events
+            for (let i = 1; i <= 7; i++) {
+                const current = new Date(today);
+                current.setDate(today.getDate() + i);
+                
+                const day = current.getDate();
+                const month = monthNames[current.getMonth()];
+                const year = current.getFullYear();
+                const dayEntries = getEntriesForDate(year, month, day);
 
-            if (upcomingDays.length === 0) {
-                elements.upcomingList.innerHTML = '<p style="font-size: 0.7rem; opacity: 0.2; font-style: italic;">No upcoming events</p>';
-                return;
-            }
-
-            upcomingDays.forEach(day => {
-                const dayEntries = state.entries[day];
-                dayEntries.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99')).forEach(e => {
+                dayEntries.forEach(e => {
                     const item = document.createElement('div');
-                    item.className = 'agenda-item';
+                    item.className = `agenda-item ${e.isRecurringInstance ? 'recurring' : ''}`;
                     item.innerHTML = `
-                        <div class="upcoming-item-day">Day ${day}</div>
+                        <div class="upcoming-item-day">${month.slice(0,3)} ${day}</div>
                         <div class="agenda-item-text">${e.text}</div>
                         <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.2rem;">
                             ${e.time ? `<div class="agenda-item-time"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>${e.time}</div>` : ''}
@@ -1645,28 +1716,31 @@
                                     ${e.reminder === '0' ? 'At time' : e.reminder + 'm'}
                                 </div>
                             ` : ''}
+                            ${e.recurring && e.recurring !== 'none' ? `<div style="font-size: 0.55rem; color: #3b82f6; opacity: 0.6;">${e.recurring}</div>` : ''}
                         </div>
                     `;
                     elements.upcomingList.appendChild(item);
                 });
-            });
+            }
+
+            if (elements.upcomingList.innerHTML === '') {
+                elements.upcomingList.innerHTML = '<p style="font-size: 0.7rem; opacity: 0.2; font-style: italic;">No upcoming events</p>';
+            }
         }
 
-        function renderAgenda(day, container) {
-            const monthIndex = monthNames.indexOf(state.month);
-            const daysInMonth = new Date(state.year, monthIndex + 1, 0).getDate();
-            const dayEntries = state.entries[day] || [];
+        function renderAgenda(day, container, month = state.month, year = state.year) {
+            const dayEntries = getEntriesForDate(year, month, day);
             container.innerHTML = '';
             if (dayEntries.length === 0) {
                 container.innerHTML = '<p style="font-size: 0.7rem; opacity: 0.2; font-style: italic;">No events</p>';
                 return;
             }
-            dayEntries.sort((a, b) => (a.time || '99:99').localeCompare(b.time || '99:99')).forEach((e, index) => {
+            dayEntries.forEach((e, index) => {
                 const item = document.createElement('label');
-                item.className = `agenda-item ${e.completed ? 'completed' : ''}`;
+                item.className = `agenda-item ${e.completed ? 'completed' : ''} ${e.isRecurringInstance ? 'recurring' : ''}`;
                 item.style.cursor = 'pointer';
                 item.innerHTML = `
-                    <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${day}, ${index})" style="accent-color: #3b82f6;">
+                    <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent('${year}-${month}-${day}', ${index})" style="accent-color: #3b82f6;">
                     <div class="agenda-item-content">
                         <div class="agenda-item-text">${e.text}</div>
                         <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.2rem;">
@@ -1677,6 +1751,7 @@
                                     ${e.reminder === '0' ? 'At time' : e.reminder + 'm'}
                                 </div>
                             ` : ''}
+                            ${e.recurring && e.recurring !== 'none' ? `<div style="font-size: 0.55rem; color: #3b82f6; opacity: 0.6;">${e.recurring}</div>` : ''}
                         </div>
                     </div>
                 `;
@@ -1700,7 +1775,8 @@
         }
 
         function renderModalEvents() {
-            const dayEntries = state.entries[state.selectedDay] || [];
+            const dateStr = `${state.year}-${(monthNames.indexOf(state.month) + 1).toString().padStart(2, '0')}-${state.selectedDay.toString().padStart(2, '0')}`;
+            const dayEntries = state.entries[dateStr] || [];
             elements.modalEventList.innerHTML = '';
             
             if (dayEntries.length > 0) {
@@ -1714,7 +1790,7 @@
                 item.className = `event-item ${e.completed ? 'completed' : ''}`;
                 item.innerHTML = `
                     <label class="event-item-info" style="display: flex; align-items: center; gap: 0.75rem; flex: 1; cursor: pointer;">
-                        <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent(${state.selectedDay}, ${index})" style="accent-color: #3b82f6;">
+                        <input type="checkbox" ${e.completed ? 'checked' : ''} onchange="toggleEvent('${dateStr}', ${index})" style="accent-color: #3b82f6;">
                         <div style="flex: 1;">
                             <div class="agenda-item-text">${e.text}</div>
                             <div style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.2rem;">
@@ -1725,10 +1801,11 @@
                                         ${e.reminder === '0' ? 'At time' : e.reminder + 'm before'}
                                     </div>
                                 ` : ''}
+                                ${e.recurring && e.recurring !== 'none' ? `<div style="font-size: 0.6rem; color: #3b82f6; opacity: 0.6;">${e.recurring}</div>` : ''}
                             </div>
                         </div>
                     </label>
-                    <button class="delete-btn" onclick="deleteEvent(${index})">
+                    <button class="delete-btn" onclick="deleteEvent('${dateStr}', ${index})">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                     </button>
                 `;
@@ -1736,21 +1813,24 @@
             });
         }
 
-        function deleteEvent(index) {
-            state.entries[state.selectedDay].splice(index, 1);
-            if (state.entries[state.selectedDay].length === 0) delete state.entries[state.selectedDay];
-            save();
-            renderModalEvents();
-            render();
-            showNotification('Event Deleted', 'Event removed from calendar.', 'warning');
+        function deleteEvent(dateStr, index) {
+            if (state.entries[dateStr]) {
+                state.entries[dateStr].splice(index, 1);
+                if (state.entries[dateStr].length === 0) delete state.entries[dateStr];
+                save();
+                renderModalEvents();
+                render();
+                showNotification('Event Deleted', 'Event removed from calendar.', 'warning');
+            }
         }
 
-        function toggleEvent(day, index) {
-            const entries = state.entries[day];
+        function toggleEvent(dateStr, index) {
+            const entries = state.entries[dateStr];
             if (entries && entries[index]) {
                 entries[index].completed = !entries[index].completed;
                 save();
-                if (state.selectedDay === day) renderModalEvents();
+                const selectedDateStr = `${state.year}-${(monthNames.indexOf(state.month) + 1).toString().padStart(2, '0')}-${state.selectedDay.toString().padStart(2, '0')}`;
+                if (selectedDateStr === dateStr) renderModalEvents();
                 render();
                 showNotification('Event Updated', 'Event status changed.', 'info');
             }
@@ -1760,21 +1840,26 @@
             const text = elements.eventInput.value.trim();
             const time = elements.timeInput.value;
             const reminder = elements.reminderInput.value;
+            const recurring = elements.recurringInput.value;
             if (text) {
-                if (!state.entries[state.selectedDay]) state.entries[state.selectedDay] = [];
-                state.entries[state.selectedDay].push({ 
+                const dateStr = `${state.year}-${(monthNames.indexOf(state.month) + 1).toString().padStart(2, '0')}-${state.selectedDay.toString().padStart(2, '0')}`;
+                if (!state.entries[dateStr]) state.entries[dateStr] = [];
+                state.entries[dateStr].push({ 
                     text, 
                     time, 
                     reminder,
+                    recurring,
                     reminderTriggered: false,
                     id: Date.now()
                 });
                 elements.eventInput.value = '';
                 elements.timeInput.value = '';
                 elements.reminderInput.value = 'none';
+                elements.recurringInput.value = 'none';
                 save();
                 renderModalEvents();
-                showNotification('Event Added', 'New event added to calendar.', 'success');
+                render();
+                showNotification('Event Added', 'Event successfully added to calendar.', 'success');
             }
         };
 
@@ -1817,16 +1902,48 @@
         });
 
         // Navigation
+        elements.monthPrev.onclick = () => {
+            let monthIndex = monthNames.indexOf(state.month);
+            monthIndex--;
+            if (monthIndex < 0) {
+                monthIndex = 11;
+                state.year--;
+            }
+            state.month = monthNames[monthIndex];
+            render();
+        };
+
+        elements.monthNext.onclick = () => {
+            let monthIndex = monthNames.indexOf(state.month);
+            monthIndex++;
+            if (monthIndex > 11) {
+                monthIndex = 0;
+                state.year++;
+            }
+            state.month = monthNames[monthIndex];
+            render();
+        };
+
         elements.prevBtn.onclick = () => {
             const monthIndex = monthNames.indexOf(state.month);
             const daysInPrevMonth = new Date(state.year, monthIndex, 0).getDate();
 
             if (state.activeView === 'week') {
                 state.viewDay -= 7;
-                if (state.viewDay < 1) state.viewDay = daysInPrevMonth + state.viewDay;
+                if (state.viewDay < 1) {
+                    let m = monthNames.indexOf(state.month) - 1;
+                    if (m < 0) { m = 11; state.year--; }
+                    state.month = monthNames[m];
+                    state.viewDay = daysInPrevMonth + state.viewDay;
+                }
             } else if (state.activeView === 'day') {
                 state.viewDay -= 1;
-                if (state.viewDay < 1) state.viewDay = daysInPrevMonth;
+                if (state.viewDay < 1) {
+                    let m = monthNames.indexOf(state.month) - 1;
+                    if (m < 0) { m = 11; state.year--; }
+                    state.month = monthNames[m];
+                    state.viewDay = daysInPrevMonth;
+                }
             }
             render();
         };
@@ -1837,10 +1954,20 @@
 
             if (state.activeView === 'week') {
                 state.viewDay += 7;
-                if (state.viewDay > daysInCurrentMonth) state.viewDay = state.viewDay - daysInCurrentMonth;
+                if (state.viewDay > daysInCurrentMonth) {
+                    state.viewDay = state.viewDay - daysInCurrentMonth;
+                    let m = monthNames.indexOf(state.month) + 1;
+                    if (m > 11) { m = 0; state.year++; }
+                    state.month = monthNames[m];
+                }
             } else if (state.activeView === 'day') {
                 state.viewDay += 1;
-                if (state.viewDay > daysInCurrentMonth) state.viewDay = 1;
+                if (state.viewDay > daysInCurrentMonth) {
+                    state.viewDay = 1;
+                    let m = monthNames.indexOf(state.month) + 1;
+                    if (m > 11) { m = 0; state.year++; }
+                    state.month = monthNames[m];
+                }
             }
             render();
         };
